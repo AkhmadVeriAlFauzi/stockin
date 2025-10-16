@@ -45,8 +45,7 @@ export default function EditProduct({ categories, product }) {
     };
 
     return (
-        <MainLayout>
-            <Head title={`Edit - ${product.name}`} />
+        <MainLayout title="Edit Produk">
             <div className="max-w-2xl mx-auto py-12">
                 <form onSubmit={handleSubmit}>
                     <Card>

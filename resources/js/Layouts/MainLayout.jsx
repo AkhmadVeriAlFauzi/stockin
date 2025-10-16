@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutDashboard, Package, ShoppingCart, Info, Wallet, Settings, UserCircle } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Info, Wallet, Settings, UserCircle, LogOut, LogOutIcon } from 'lucide-react';
 
 // === Komponen NavLink (Biar tetap di sini biar rapi) ===
 function NavLink({ href, active, children, icon: Icon }) {
@@ -47,13 +47,12 @@ function Sidebar() {
             </nav>
             {/* User Profile di bawah */}
             <div className="mt-auto">
-                 <div className="flex items-center space-x-3 p-3">
-                    <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
-                        <UserCircle className="w-6 h-6 text-slate-500" />
+                 <div className="flex items-center space-x-1 px-2 py-1 hover:bg-red-50 rounded-md">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center">
+                        <LogOutIcon className="w-5 h-5 text-slate-800" />
                     </div>
                     <div className="flex-1 truncate">
-                        <p className="font-semibold text-slate-800 text-sm">John Doe</p>
-                        <p className="text-xs text-slate-500">Admin</p>
+                        <p className="font-semibold text-slate-800 text-sm">Logout</p>
                     </div>
                  </div>
             </div>
@@ -69,6 +68,17 @@ function Header({ title }) {
                 {title || 'Page'}
             </h1>
             {/* Bisa tambahkan item lain di kanan header nanti */}
+            <div className="mt-auto">
+                 <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                        <UserCircle className="w-6 h-6 text-slate-500" />
+                    </div>
+                    <div className="flex-1 truncate">
+                        <p className="font-semibold text-slate-800 text-sm">John Doe</p>
+                        <p className="text-xs text-slate-500">Admin</p>
+                    </div>
+                 </div>
+            </div>
         </header>
     );
 }

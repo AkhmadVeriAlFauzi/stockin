@@ -43,8 +43,7 @@ export default function CreateProduct({ categories }) {
     };
 
     return (
-        <MainLayout>
-            <Head title="Add New Product" />
+        <MainLayout title="Tambah Produk">
             <div className="max-w-2xl mx-auto py-12">
                 <form onSubmit={handleSubmit}>
                     <Card>
@@ -86,27 +85,27 @@ export default function CreateProduct({ categories }) {
                                 <div className="grid w-full items-center gap-1.5"><Label htmlFor="stock">Stock</Label><Input id="stock" type="number" value={data.stock} onChange={(e) => setData('stock', e.target.value)} /><InputError message={errors.stock} /></div>
                             </div>
                             <div className="grid w-full items-center gap-1.5">
-    <Label>Status</Label>
-    <RadioGroup
-        value={data.status}
-        onValueChange={(value) => setData('status', value)}
-        className="flex items-center space-x-6 pt-2"
-    >
-        <div className="flex items-center gap-2">
-            <RadioGroupItem value="active" id="r1" />
-            <Label htmlFor="r1" className="font-normal cursor-pointer">
-                Published
-            </Label>
-        </div>
-        <div className="flex items-center gap-2">
-            <RadioGroupItem value="archived" id="r2" />
-            <Label htmlFor="r2" className="font-normal cursor-pointer">
-                Archived
-            </Label>
-        </div>
-    </RadioGroup>
-    <InputError message={errors.status} />
-</div>
+                                <Label>Status</Label>
+                                <RadioGroup
+                                    value={data.status}
+                                    onValueChange={(value) => setData('status', value)}
+                                    className="flex items-center space-x-6 pt-2"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <RadioGroupItem value="active" id="r1" />
+                                        <Label htmlFor="r1" className="font-normal cursor-pointer">
+                                            Published
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <RadioGroupItem value="archived" id="r2" />
+                                        <Label htmlFor="r2" className="font-normal cursor-pointer">
+                                            Archived
+                                        </Label>
+                                    </div>
+                                </RadioGroup>
+                                <InputError message={errors.status} />
+                            </div>
                         </CardContent>
                         <CardFooter className="flex justify-end space-x-4">
                             <Button variant="outline" asChild><Link href="/products">Cancel</Link></Button>
