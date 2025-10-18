@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutDashboard, Package, ShoppingCart, Info, Wallet, Settings, UserCircle, LogOut, LogOutIcon } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Info, Wallet, Settings, UserCircle, LogOut, LogOutIcon, StoreIcon } from 'lucide-react';
+import { Toaster } from '@/Components/ui/sonner';
 
 // === Komponen NavLink (Biar tetap di sini biar rapi) ===
 function NavLink({ href, active, children, icon: Icon }) {
@@ -24,7 +25,7 @@ function Sidebar() {
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/products', label: 'Product', icon: Package },
         { href: '/orders', label: 'Orders', icon: ShoppingCart },
-        { href: '/store-info', label: 'Store Info', icon: Info },
+        { href: '/store', label: 'Store Info', icon: StoreIcon },
         { href: '/finance', label: 'Finance', icon: Wallet },
         { href: '/settings', label: 'Settings', icon: Settings },
     ];
@@ -95,6 +96,7 @@ export default function MainLayout({ children, title }) {
                     {children}
                 </main>
             </div>
+            <Toaster richColors position="top-right" />
         </div>
     );
 }
