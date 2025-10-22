@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutDashboard, Package, ShoppingCart, Info, Wallet, Settings, UserCircle, LogOut, LogOutIcon, StoreIcon } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Info, Wallet, Settings, UserCircle, LogOutIcon, StoreIcon } from 'lucide-react';
 import { Toaster } from '@/Components/ui/sonner';
 
-// === Komponen NavLink (Biar tetap di sini biar rapi) ===
+// === Komponen NavLink ===
 function NavLink({ href, active, children, icon: Icon }) {
     const commonClasses = 'flex items-center w-full px-3 py-2.5 rounded-md text-sm font-medium transition-colors duration-150';
     const activeClasses = 'bg-indigo-50 text-indigo-600 font-semibold';
@@ -20,7 +20,6 @@ function NavLink({ href, active, children, icon: Icon }) {
 // === Komponen Sidebar ===
 function Sidebar() {
     const { url } = usePage();
-
     const navLinks = [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/products', label: 'Product', icon: Package },
@@ -37,7 +36,6 @@ function Sidebar() {
             </div>
             <nav className="flex-1 flex flex-col space-y-2">
                 {navLinks.map((link) => {
-                    // Logika isActive diperbaiki sedikit biar lebih akurat
                     const isActive = url === link.href || (link.href !== '/' && url.startsWith(link.href));
                     return (
                         <NavLink key={link.label} href={link.href} active={isActive} icon={link.icon}>
@@ -46,50 +44,52 @@ function Sidebar() {
                     );
                 })}
             </nav>
-            {/* User Profile di bawah */}
             <div className="mt-auto">
-                 <div className="flex items-center space-x-1 px-2 py-1 hover:bg-red-50 rounded-md">
+                <Link
+                    href="/logout"
+                    method="post"
+                    as="button"
+                    className="flex items-center space-x-1 px-2 py-1 hover:bg-red-100 rounded-md w-full text-left cursor-pointer"
+                >
                     <div className="w-10 h-10 rounded-full flex items-center justify-center">
-                        <LogOutIcon className="w-5 h-5 text-slate-800" />
+                        <LogOutIcon className="w-5 h-5 text-slate-700" />
                     </div>
                     <div className="flex-1 truncate">
                         <p className="font-semibold text-slate-800 text-sm">Logout</p>
                     </div>
-                 </div>
+                </Link>
             </div>
         </aside>
     );
 }
 
-// === Komponen Header ===
+// === Komponen Header (VERSI AMAN) ===
 function Header({ title }) {
+    const { auth } = usePage().props;
+
     return (
         <header className="bg-white/70 backdrop-blur-sm sticky top-0 z-10 border-b border-slate-200 py-4 px-8 flex justify-between items-center">
-            <h1 className="text-xl font-semibold text-slate-800">
+            <h1 className="text-lg font-semibold text-slate-800">
                 {title || 'Page'}
             </h1>
-            {/* Bisa tambahkan item lain di kanan header nanti */}
-            <div className="mt-auto">
-                 <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
-                        <UserCircle className="w-6 h-6 text-slate-500" />
-                    </div>
-                    <div className="flex-1 truncate">
-                        <p className="font-semibold text-slate-800 text-sm">John Doe</p>
-                        <p className="text-xs text-slate-500">Admin</p>
-                    </div>
-                 </div>
+            <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                    <UserCircle className="w-6 h-6 text-slate-500" />
+                </div>
+                <div className="flex-1 truncate">
+                    <p className="font-semibold text-slate-800 text-sm">{auth.user?.name || 'Guest User'}</p>
+                    {auth.user && <p className="text-xs text-slate-500">Admin</p>}
+                </div>
             </div>
         </header>
     );
 }
 
-// === Komponen Layout Utama (Dengan Perbaikan) ===
+// === Komponen Layout Utama ===
 export default function MainLayout({ children, title }) {
     return (
         <div className="min-h-screen bg-slate-50">
             <Sidebar />
-            {/* 👇 KUNCI UTAMANYA DI SINI 👇 */}
             <div className="ml-64 flex-1 flex flex-col">
                 <Header title={title} />
                 <main className="p-8">
