@@ -9,7 +9,7 @@ class ProductCategory extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug'];
+    protected $fillable = ['name', 'description','slug'];
 
     // RELASI: Satu Kategori punya banyak Produk
     public function products()

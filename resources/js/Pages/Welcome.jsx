@@ -1,24 +1,32 @@
-// resources/js/Pages/Welcome.jsx
-
 import React from 'react';
-// import MainLayout from '../Layouts/MainLayout'; 
+import { Head, Link } from '@inertiajs/react';
 
-export default function Welcome({ appName, phpVersion }) {
-  return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white shadow-lg rounded-xl p-8 max-w-md w-full text-center">
-        <h1 className="text-4xl font-black text-gray-800 mb-2">
-          🚀 {appName}
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Selamat datang di setup Laravel, Inertia, React & Tailwind CSS!
-        </p>
-
-        <div className="bg-indigo-50 text-indigo-800 rounded-lg p-4">
-          <p>Versi PHP kamu saat ini: <strong>{phpVersion}</strong></p>
-        </div>
-      </div>
-    </main>
-  );
+export default function Welcome() {
+    return (
+        <>
+            <Head title="Welcome to Stokin" />
+            <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center">
+                <div className="text-center p-8">
+                    <h1 className="text-5xl font-bold text-indigo-600 mb-4">Stokin.</h1>
+                    <p className="text-lg text-slate-600 mb-8">
+                        Your one-stop solution for food business supplies.
+                    </p>
+                    <div className="space-x-4">
+                        <Link
+                            href="/login"
+                            className="inline-block bg-indigo-600 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-indigo-700 transition"
+                        >
+                            Login
+                        </Link>
+                        <Link
+                            href="/register"
+                            className="inline-block bg-white text-indigo-600 font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-slate-50 transition"
+                        >
+                            Register
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
 }
-// Welcome.layout = page => <MainLayout children={page} title="Home" />
