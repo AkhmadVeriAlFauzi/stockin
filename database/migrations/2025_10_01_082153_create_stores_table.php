@@ -16,8 +16,8 @@ return new class extends Migration
             $table->foreignId('user_id')->unique()->constrained('users')->onDelete('cascade');
             $table->string('store_name');
             $table->text('description')->nullable();
-            $table->text('address');
-            $table->string('city', 100);
+            $table->text('address')->nullable();
+            $table->string('city', 100)->nullable();
             $table->string('logo_url')->nullable();
             $table->enum('status', ['active', 'inactive', 'pending_verification'])->default('pending_verification');
             $table->timestamps();

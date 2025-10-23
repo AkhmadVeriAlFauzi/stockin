@@ -15,13 +15,15 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
+        // Ambil user yang sedang login
+        $user = $request->user();
         
-        $store = Store::firstOrFail();
-        $categories = ProductCategory::all(['id', 'name']);
+        // Mulai query dari relasi, bukan dari semua produk.
+        // Ini secara otomatis HANYA akan mengambil produk milik toko si user.
+        $productsQuery = $user->store->products()->with(['category:id,name']);
 
-        $products = Product::query()
-            ->where('store_id', $store->id)
-            ->with('category:id,name')
+        // Terapkan filter yang sudah ada
+        $products = $productsQuery
             ->when($request->input('category'), function ($query, $categoryId) {
                 $query->where('category_id', $categoryId);
             })
@@ -35,7 +37,7 @@ class ProductController extends Controller
 
         return Inertia::render('cms/manageProduct/index', [
             'products' => $products,
-            'categories' => $categories, 
+            'categories' => ProductCategory::all(['id', 'name']),
             'filters' => $request->only(['search', 'category']),
         ]);
     }
@@ -50,73 +52,65 @@ class ProductController extends Controller
 
     public function store(StoreProductRequest $request)
     {
-        // HAPUS dd() DARI SINI
-        
-        $store = Store::firstOrFail();
-        
-        // 1. Ambil SEMUA data yang sudah lolos validasi dari StoreProductRequest
         $validated = $request->validated(); 
 
-        // 2. Cek apakah ada file gambar yang di-upload
         if ($request->hasFile('image')) {
-            // Simpan gambar ke folder 'public/products' dan dapatkan path-nya
             $path = $request->file('image')->store('products', 'public');
-            
-            // Tambahkan URL gambar yang bisa diakses publik ke dalam data tervalidasi
             $validated['image_url'] = Storage::url($path);
         }
 
-        // 3. Buat produk HANYA SEKALI dengan semua data yang sudah lengkap
-        Product::create($validated + ['store_id' => $store->id]);
+        // Ambil toko milik user yang login, lalu buat produk di sana.
+        $request->user()->store->products()->create($validated);
 
-        // 4. Redirect kembali dengan pesan sukses
         return redirect()->route('products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
     
-    public function edit(Product $product)
+    public function edit(Request $request, Product $product)
     {
-        // Method ini tugasnya mengambil data produk yang mau diedit
-        // dan menampilkannya di halaman form Edit.
+        // PENTING: Cek kepemilikan produk sebelum menampilkan halaman edit
+        if ($product->store_id !== $request->user()->store->id) {
+            abort(403); // Tampilkan halaman "Akses Ditolak"
+        }
+
         $categories = ProductCategory::all(['id', 'name']);
         return Inertia::render('cms/manageProduct/Edit', [
-            'product' => $product, // Kirim data produk yang spesifik ke frontend
+            'product' => $product,
             'categories' => $categories,
         ]);
     }
 
     public function update(UpdateProductRequest $request, Product $product)
     {
-        $validated = $request->validated();
+        // PENTING: Cek kepemilikan produk sebelum update
+        if ($product->store_id !== $request->user()->store->id) {
+            abort(403);
+        }
 
-        // Logika untuk handle update gambar
+        $validated = $request->validated();
         if ($request->hasFile('image')) {
-            // Hapus gambar lama jika ada
             if ($product->image_url) {
-                // Hapus '/storage/' dari awal path untuk mendapatkan path file yang benar
                 $oldPath = str_replace('/storage/', '', $product->image_url);
                 Storage::disk('public')->delete($oldPath);
             }
-
-            // Simpan gambar baru dan update path-nya
             $path = $request->file('image')->store('products', 'public');
             $validated['image_url'] = Storage::url($path);
         }
-
-        // Update produk dengan data baru
         $product->update($validated);
 
         return redirect()->route('products.index')->with('success', 'Produk berhasil diperbarui.');
     }
 
-    public function destroy(Product $product)
+    public function destroy(Request $request, Product $product)
     {
-        // Hapus file gambar dari storage
+        // PENTING: Cek kepemilikan produk sebelum menghapus
+        if ($product->store_id !== $request->user()->store->id) {
+            abort(403);
+        }
+
         if ($product->image_url) {
             $oldPath = str_replace('/storage/', '', $product->image_url);
             Storage::disk('public')->delete($oldPath);
         }
-
-        // Hapus data produk dari database
         $product->delete();
 
         return redirect()->back()->with('success', 'Produk berhasil dihapus.');

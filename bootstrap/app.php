@@ -10,11 +10,18 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
+    ->withMiddleware(function (Middleware $middleware) {
+        // Ini adalah middleware untuk handle request Inertia
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
+            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+        ]);
+        
+        // 👇 TAMBAHKAN ALIAS ROLE DI SINI 👇
+        $middleware->alias([
+            'role' => \App\Http\Middleware\EnsureUserHasRole::class,
         ]);
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
+    ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

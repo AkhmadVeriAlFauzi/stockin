@@ -26,7 +26,7 @@ function Sidebar() {
         { href: '/orders', label: 'Orders', icon: ShoppingCart },
         { href: '/store', label: 'Store Info', icon: StoreIcon },
         { href: '/finance', label: 'Finance', icon: Wallet },
-        { href: '/settings', label: 'Settings', icon: Settings },
+        { href: '/profile', label: 'Profile', icon: Settings },
     ];
 
     return (

@@ -36,7 +36,15 @@ class RegisteredUserController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password), // Password WAJIB di-hash!
+            'password' => Hash::make($request->password),
+            'role' => 'umkm_admin', // Kita set role default saat registrasi
+        ]);
+
+        // 👇 LANGKAH BARU: Buat toko otomatis untuk user ini 👇
+        $user->store()->create([
+            'store_name' => $user->name . "'s Store", // Kita kasih nama default untuk tokonya
+            'status' => 'active',
+            // Kolom lain (description, address, dll) akan null by default jika diizinkan
         ]);
 
         // 3. Login-kan user yang baru dibuat secara otomatis

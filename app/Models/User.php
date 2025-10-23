@@ -22,6 +22,7 @@ class User extends Authenticatable
         'password',
         'phone_number',
         'profile_picture',
+        'role',
     ];
 
     /**
@@ -60,5 +61,9 @@ class User extends Authenticatable
     public function orders()
     {
         return $this->hasMany(Order::class, 'buyer_id');
+    }
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
     }
 }
