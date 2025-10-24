@@ -23,9 +23,12 @@ class UpdateProductRequest extends FormRequest
      */
     public function rules(): array
     {
+        $productId = $this->route('product')->id;
+
         return [
             // 👇 PASTIKAN SEMUA RULES INI LENGKAP 👇
             'name' => ['required', 'string', 'max:255'],
+            'sku' => 'nullable|string|max:255|unique:products,sku,' . $productId,
             'category_id' => ['required', 'exists:product_categories,id'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],

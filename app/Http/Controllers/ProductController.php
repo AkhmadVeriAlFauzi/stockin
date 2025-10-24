@@ -2,51 +2,62 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreProductRequest;
-use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
 use App\Models\ProductCategory;
-use App\Models\Store;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+// Tambahkan use statement untuk Form Request jika belum ada
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
+use Illuminate\Support\Facades\Storage;
+
 
 class ProductController extends Controller
 {
+    use AuthorizesRequests;
     public function index(Request $request)
     {
-        // Ambil user yang sedang login
-        $user = $request->user();
-        
-        // Mulai query dari relasi, bukan dari semua produk.
-        // Ini secara otomatis HANYA akan mengambil produk milik toko si user.
-        $productsQuery = $user->store->products()->with(['category:id,name']);
+        $user = Auth::user();
 
-        // Terapkan filter yang sudah ada
-        $products = $productsQuery
-            ->when($request->input('category'), function ($query, $categoryId) {
-                $query->where('category_id', $categoryId);
-            })
-            ->when($request->input('search'), function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('sku', 'like', "%{$search}%");
-            })
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
+        if (!$user->store) {
+            // Pointing ke path lama, tapi dengan prop needsSetup
+            return Inertia::render('cms/manageProduct/Index', [
+                'needsSetup' => true,
+            ]);
+        }
 
-        return Inertia::render('cms/manageProduct/index', [
+        $productsQuery = $user->store->products()->with(['category:id,name'])->latest();
+
+        $productsQuery->when($request->input('search'), function ($query, $search) {
+            $query->where('name', 'like', "%{$search}%")
+                ->orWhere('sku', 'like', "%{$search}%");
+        });
+
+        $productsQuery->when($request->input('category'), function ($query, $categoryId) {
+            $query->where('category_id', $categoryId);
+        });
+
+        $products = $productsQuery->paginate(10)->withQueryString();
+
+        return Inertia::render('cms/manageProduct/Index', [
             'products' => $products,
-            'categories' => ProductCategory::all(['id', 'name']),
+            'needsSetup' => false,
+            // Kirim juga data categories dan filters untuk UI
+            'categories' => ProductCategory::orderBy('name')->get(['id', 'name']),
             'filters' => $request->only(['search', 'category']),
         ]);
     }
     
     public function create()
     {
-        $categories = ProductCategory::all(['id', 'name']);
+        if (!Auth::user()->store) {
+            return redirect()->route('store.edit')->with('error', 'You need to create a store first.');
+        }
+
         return Inertia::render('cms/manageProduct/Create', [
-            'categories' => $categories,
+            'categories' => ProductCategory::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -59,32 +70,24 @@ class ProductController extends Controller
             $validated['image_url'] = Storage::url($path);
         }
 
-        // Ambil toko milik user yang login, lalu buat produk di sana.
         $request->user()->store->products()->create($validated);
 
         return redirect()->route('products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
     
-    public function edit(Request $request, Product $product)
+    public function edit(Product $product)
     {
-        // PENTING: Cek kepemilikan produk sebelum menampilkan halaman edit
-        if ($product->store_id !== $request->user()->store->id) {
-            abort(403); // Tampilkan halaman "Akses Ditolak"
-        }
+        $this->authorize('update', $product);
 
-        $categories = ProductCategory::all(['id', 'name']);
         return Inertia::render('cms/manageProduct/Edit', [
             'product' => $product,
-            'categories' => $categories,
+            'categories' => ProductCategory::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
     public function update(UpdateProductRequest $request, Product $product)
     {
-        // PENTING: Cek kepemilikan produk sebelum update
-        if ($product->store_id !== $request->user()->store->id) {
-            abort(403);
-        }
+        $this->authorize('update', $product);
 
         $validated = $request->validated();
         if ($request->hasFile('image')) {
@@ -100,19 +103,19 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Produk berhasil diperbarui.');
     }
 
-    public function destroy(Request $request, Product $product)
+    public function destroy(Product $product)
     {
-        // PENTING: Cek kepemilikan produk sebelum menghapus
-        if ($product->store_id !== $request->user()->store->id) {
-            abort(403);
-        }
-
+        $this->authorize('delete', $product);
         if ($product->image_url) {
+            // Hapus '/storage/' dari awal path untuk mendapatkan path file yang benar
             $oldPath = str_replace('/storage/', '', $product->image_url);
             Storage::disk('public')->delete($oldPath);
         }
+        
+        // 3. Hapus data produk dari database
         $product->delete();
 
+        // 4. Kembali ke halaman sebelumnya dengan notifikasi sukses
         return redirect()->back()->with('success', 'Produk berhasil dihapus.');
     }
 }
