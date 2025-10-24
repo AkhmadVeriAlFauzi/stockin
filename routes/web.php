@@ -55,3 +55,7 @@ Route::middleware(['auth', 'role:superadmin'])->group(function () {
     // Tambah rute super admin lain di sini
     Route::resource('/manage-umkm', ManageUmkmController::class);
 });
+
+if (App::isLocal()) {
+    Route::get('/dev/create-order/{store}', [OrderController::class, 'createDummyOrder']);
+}

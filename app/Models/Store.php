@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Store extends Model
 {
     use HasFactory;
+    protected $guarded = [];
 
     protected $fillable = [
         'user_id',
@@ -30,8 +31,10 @@ class Store extends Model
     {
         return $this->hasMany(Product::class);
     }
-
-    // RELASI: Satu Toko punya banyak item yang diorder
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
