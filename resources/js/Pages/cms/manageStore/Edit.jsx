@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import MainLayout from '../../../Layouts/MainLayout';
 import { useForm, Head } from '@inertiajs/react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
@@ -7,23 +7,21 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
 import InputError from '@/Components/InputError';
-import { usePage } from '@inertiajs/react';
-import { toast } from 'sonner';
 
-// --- Komponen Aktor #1: LogoUploader (VERSI UPGRADE) ---
+// Komponen LogoUploader (dari kode lo, sudah bagus)
 const LogoUploader = ({ logoPreview, currentLogoUrl, onLogoChange, error }) => {
     const fileInputRef = useRef();
+    const defaultLogo = 'https://via.placeholder.com/160'; // Placeholder jika tidak ada logo
 
     return (
         <div className="md:col-span-1 space-y-2 flex flex-col items-center">
             <Label className="text-center">Store Logo</Label>
-            
             <div 
                 className="w-40 h-40 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden cursor-pointer group relative"
                 onClick={() => fileInputRef.current.click()}
             >
                 <img 
-                    src={logoPreview || currentLogoUrl || 'https://via.placeholder.com/160'} 
+                    src={logoPreview || currentLogoUrl || defaultLogo} 
                     alt="Logo Preview" 
                     className="w-full h-full object-cover group-hover:opacity-50 transition-opacity"
                 />
@@ -31,51 +29,52 @@ const LogoUploader = ({ logoPreview, currentLogoUrl, onLogoChange, error }) => {
                     <p className="text-white text-sm">Change Logo</p>
                 </div>
             </div>
-            
-            <Input 
-                id="logo" 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={onLogoChange} 
-                className="hidden" 
-            />
-
+            <Input id="logo" type="file" ref={fileInputRef} onChange={onLogoChange} className="hidden" />
             <Button type="button" variant="link" size="sm" onClick={() => fileInputRef.current.click()}>
                 Choose a file
             </Button>
-            
             <InputError message={error} />
         </div>
     );
 };
 
-// --- Komponen Aktor #2: StoreDetailsForm ---
+// Komponen Form Detail (sudah ditambahkan 'city')
 const StoreDetailsForm = ({ data, setData, errors }) => (
-    <div className="md:col-span-2 space-y-3">
-        <div><Label htmlFor="name">Store Name</Label><Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} /><InputError message={errors.name} /></div>
-        <div><Label htmlFor="email">Email</Label><Input id="email" type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} /><InputError message={errors.email} /></div>
-        <div><Label htmlFor="phone">Phone</Label><Input id="phone" value={data.phone} onChange={(e) => setData('phone', e.target.value)} /><InputError message={errors.phone} /></div>
-        <div><Label htmlFor="address">Address</Label><Textarea id="address" value={data.address} onChange={(e) => setData('address', e.target.value)} /><InputError message={errors.address} /></div>
-        <div><Label htmlFor="description">Description</Label><Textarea id="description" value={data.description} onChange={(e) => setData('description', e.target.value)} /><InputError message={errors.description} /></div>
+    <div className="md:col-span-2 space-y-4">
+        <div>
+            <Label htmlFor="store_name">Store Name</Label>
+            <Input id="store_name" value={data.store_name} onChange={(e) => setData('store_name', e.target.value)} />
+            <InputError message={errors.store_name} />
+        </div>
+        <div>
+            <Label htmlFor="address">Address</Label>
+            <Textarea id="address" value={data.address} onChange={(e) => setData('address', e.target.value)} />
+            <InputError message={errors.address} />
+        </div>
+        <div>
+            <Label htmlFor="city">City</Label>
+            <Input id="city" value={data.city} onChange={(e) => setData('city', e.target.value)} />
+            <InputError message={errors.city} />
+        </div>
+        <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea id="description" className="min-h-[100px]" value={data.description} onChange={(e) => setData('description', e.target.value)} />
+            <InputError message={errors.description} />
+        </div>
     </div>
 );
 
-
-// --- Komponen Sutradara: EditStore ---
+// Komponen Utama (sudah diupdate)
 export default function EditStore({ store }) {
-    const { flash } = usePage().props;
     const { data, setData, post, processing, errors, reset } = useForm({
-        name: store.name || '',
-        email: store.email || '',
-        phone: store.phone || '',
-        address: store.address || '',
+        store_name: store.store_name || '',
         description: store.description || '',
+        address: store.address || '',
+        city: store.city || '',
         logo: null,
-        _method: 'PUT',
+        _method: 'PUT', // Penting untuk routing update
     });
     const [logoPreview, setLogoPreview] = useState(null);
-
-    useEffect(() => { if (flash && flash.success) { toast.success(flash.success); } }, [flash]);
 
     const handleLogoChange = (e) => {
         const file = e.target.files[0];
@@ -88,6 +87,7 @@ export default function EditStore({ store }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         post('/store', {
+            // Karena ada file upload, Inertia otomatis handle FormData
             onSuccess: () => {
                 reset('logo');
                 setLogoPreview(null);
@@ -97,9 +97,8 @@ export default function EditStore({ store }) {
     };
 
     return (
-        <MainLayout>
-            <Head title="Store Information" />
-            <div className="">
+        <MainLayout title="Manage Store">
+            <div className="max-w-4xl mx-auto py-8">
                 <form onSubmit={handleSubmit}>
                     <Card>
                         <CardHeader>

@@ -33,7 +33,7 @@ export default function ManageOrder({ orders, filters, statuses }) { // <-- Gant
                 <PageHeader 
                     searchTerm={data.search}
                     onSearchChange={(e) => setData('search', e.target.value)}
-                    searchPlaceholder="Search by order # or customer..."
+                    searchPlaceholder="Search by order or customer..."
                     // addUrl="/orders/create" // Kita belum buat, jadi dikomen dulu
                     // addText="Add Order"
                 >

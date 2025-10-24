@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateStoreRequest;
 use App\Models\Store;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -17,7 +18,7 @@ class StoreController extends Controller
     {
         // Ambil data toko pertama yang ada di database.
         // Jika tidak ada, akan error 404.
-        $store = Store::firstOrFail();
+        $store = Auth::user()->store()->firstOrFail();
 
         // Render halaman frontend dan kirim data toko
         return Inertia::render('cms/manageStore/Edit', [
@@ -31,7 +32,7 @@ class StoreController extends Controller
     public function update(UpdateStoreRequest $request)
     {
         // Ambil data toko yang mau di-update
-        $store = Store::firstOrFail();
+        $store = Auth::user()->store()->firstOrFail();
         
         // Validasi otomatis dijalankan oleh UpdateStoreRequest
         $validated = $request->validated();
