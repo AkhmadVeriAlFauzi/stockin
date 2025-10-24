@@ -2,77 +2,44 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class FinanceController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        // Ambil filter periode dari request, default-nya 'last_30_days'
-        $period = $request->input('period', 'last_30_days');
-        $startDate = now();
-        $endDate = now();
+        $user = Auth::user();
+        $store = $user->store()->firstOrFail();
 
-        // Tentukan rentang tanggal berdasarkan periode yang dipilih
-        switch ($period) {
-            case 'last_7_days':
-                $startDate = now()->subDays(6)->startOfDay();
-                break;
-            case 'this_month':
-                $startDate = now()->startOfMonth();
-                break;
-            case 'last_month':
-                $startDate = now()->subMonth()->startOfMonth();
-                $endDate = now()->subMonth()->endOfMonth();
-                break;
-            default: // last_30_days
-                $startDate = now()->subDays(29)->startOfDay();
-                break;
-        }
+        // 1. Buat query dasar untuk semua pesanan yang sudah selesai
+        $completedOrdersQuery = $store->orders()->where('order_status', 'completed');
 
-        // --- Mulai Query ---
-        $completedOrdersQuery = Order::where('order_status', 'completed')
-                                     ->whereBetween('created_at', [$startDate, $endDate]);
-
-        // --- 1. Hitung Kartu Statistik (KPIs) ---
+        // 2. Hitung statistik utama
         $totalRevenue = (clone $completedOrdersQuery)->sum('total_price');
-        $totalOrdersCount = (clone $completedOrdersQuery)->count();
-        $averageOrderValue = $totalOrdersCount > 0 ? $totalRevenue / $totalOrdersCount : 0;
+        $totalOrdersCompleted = (clone $completedOrdersQuery)->count();
 
-        // --- 2. Siapkan Data untuk Grafik ---
-        $salesData = (clone $completedOrdersQuery)
-            ->groupBy('date')
-            ->orderBy('date', 'ASC')
-            ->get([
-                DB::raw('DATE(created_at) as date'),
-                DB::raw('SUM(total_price) as total')
-            ])
-            ->map(function ($item) {
-                return ['x' => $item->date, 'y' => (float) $item->total];
-            });
+        // 3. Hitung statistik untuk periode waktu tertentu (contoh: bulan ini)
+        $revenueThisMonth = (clone $completedOrdersQuery)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('total_price');
 
-        // --- 3. Ambil Daftar Transaksi Terbaru ---
+        // 4. Ambil daftar transaksi terakhir yang sudah selesai untuk ditampilkan di tabel
         $recentTransactions = (clone $completedOrdersQuery)
-            ->with('buyer:id,name')
-            ->latest()
-            ->take(10)
-            ->get();
-        
-        // --- 4. Kirim Semua Data ke Frontend ---
+            ->with('buyer:id,name', 'items.product:id,name','shippingAddress') // Ambil info pembeli biar efisien
+            ->latest() // Urutkan dari yang paling baru
+            ->paginate(10);
+
+        // 5. Kirim semua data ke frontend
         return Inertia::render('cms/finance/index', [
             'stats' => [
-                'total_revenue' => $totalRevenue,
-                'total_orders' => $totalOrdersCount,
-                'average_order_value' => $averageOrderValue,
+                'totalRevenue' => (float) $totalRevenue,
+                'totalOrdersCompleted' => $totalOrdersCompleted,
+                'revenueThisMonth' => (float) $revenueThisMonth,
             ],
-            'salesData' => $salesData,
-            'recentTransactions' => $recentTransactions,
-            // Kirim filter yang sedang aktif ke frontend
-            'filters' => ['period' => $period],
+            'transactions' => $recentTransactions,
         ]);
     }
 }
