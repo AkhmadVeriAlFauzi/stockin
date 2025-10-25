@@ -44,6 +44,7 @@ Route::middleware(['auth', 'role:umkm_admin'])->group(function () {
     Route::get('/store', [StoreController::class, 'edit'])->name('store.edit');
     Route::put('/store', [StoreController::class, 'update'])->name('store.update');
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
+    Route::get('/finance/export', [FinanceController::class, 'export'])->name('finance.export');
 });
 
 // ==========================================================

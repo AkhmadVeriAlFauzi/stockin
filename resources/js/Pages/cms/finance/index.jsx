@@ -1,18 +1,19 @@
-import React, { useState } from 'react'; // Diimpor untuk modal nanti
+import React, { useState } from 'react';
 import MainLayout from '@/Layouts/MainLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/Components/ui/dialog';
 import Pagination from '@/Components/Pagination';
-import { DollarSign, Package, Wallet, Eye } from 'lucide-react';
+// 1. TAMBAHKAN IKON DOWNLOAD DI SINI
+import { DollarSign, Package, Wallet, Eye, Download } from 'lucide-react'; 
 import { Button } from '@/Components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import { Label } from '@/Components/ui/label';
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
+        style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
     }).format(amount);
 };
 
@@ -22,15 +23,34 @@ const StatCard = ({ title, value, icon, description }) => (
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             {icon}
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-1">
             <div className="text-2xl font-bold">{value}</div>
             <p className="text-xs text-muted-foreground">{description}</p>
         </CardContent>
     </Card>
 );
 
-export default function Index({ stats, transactions }) {
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+const months = Array.from({ length: 12 }, (_, i) => ({
+    value: i + 1,
+    label: new Date(0, i).toLocaleString('id-ID', { month: 'long' }),
+}));
+
+export default function Index({ stats, transactions, filters }) {
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [selectedMonth, setSelectedMonth] = useState(filters.month.toString());
+    const [selectedYear, setSelectedYear] = useState(filters.year.toString());
+
+    const handleFilterApply = () => {
+        router.get('/finance', {
+            month: selectedMonth,
+            year: selectedYear,
+        }, {
+            preserveState: true,
+            replace: true,
+        });
+    };
 
     return (
         <MainLayout title="Finance Dashboard">
@@ -51,18 +71,72 @@ export default function Index({ stats, transactions }) {
                         icon={<Package className="h-4 w-4 text-muted-foreground" />}
                     />
                     <StatCard 
-                        title="Pendapatan Bulan Ini" 
-                        value={formatCurrency(stats.revenueThisMonth)}
-                        description={`Per tanggal ${new Date().toLocaleDateString('id-ID')}`}
+                        title={`Pendapatan ${stats.periodName}`}
+                        value={formatCurrency(stats.revenueForPeriod)}
+                        description={`Data untuk periode ${stats.periodName}`}
                         icon={<Wallet className="h-4 w-4 text-muted-foreground" />}
                     />
                 </div>
 
-                {/* Bagian Tabel Transaksi Terbaru */}
+                {/* Bagian Filter (Tetap Sama) */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Transaksi Terakhir</CardTitle>
+                        <CardTitle>Filter Laporan</CardTitle>
+                        <CardDescription>Lihat data transaksi untuk periode tertentu.</CardDescription>
                     </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-col md:flex-row gap-4 items-end">
+                            <div className="flex-1 w-full">
+                                <Label htmlFor="month">Bulan</Label>
+                                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                                    <SelectTrigger id="month">
+                                        <SelectValue placeholder="Pilih bulan" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {months.map(month => (
+                                            <SelectItem key={month.value} value={month.value.toString()}>
+                                                {month.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex-1 w-full">
+                                <Label htmlFor="year">Tahun</Label>
+                                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                    <SelectTrigger id="year">
+                                        <SelectValue placeholder="Pilih tahun" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {years.map(year => (
+                                            <SelectItem key={year} value={year.toString()}>
+                                                {year}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <Button onClick={handleFilterApply} className="w-full md:w-auto">Terapkan</Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Bagian Tabel Transaksi (sudah difilter) */}
+                <Card>
+                    {/* 2. BAGIAN INI DI-UPDATE */}
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Transaksi Terakhir ({stats.periodName})</CardTitle>
+                            <CardDescription>Daftar transaksi yang sudah selesai pada periode ini.</CardDescription>
+                        </div>
+                        <Button asChild variant="outline" size="sm">
+                            <a href={`/finance/export?month=${filters.month}&year=${filters.year}`}>
+                                <Download className="h-4 w-4 mr-2" />
+                                Export ke Excel
+                            </a>
+                        </Button>
+                    </CardHeader>
+                    {/* --------------------------- */}
                     <CardContent>
                         <Table>
                             <TableHeader>
@@ -77,27 +151,22 @@ export default function Index({ stats, transactions }) {
                             <TableBody>
                                 {transactions.data.length > 0 ? (
                                     transactions.data.map((trx) => (
-                                        // ===== BAGIAN INI DIPERBAIKI =====
-                                        // Link yang membungkus TableRow dihapus
                                         <TableRow key={trx.id}>
                                             <TableCell className="font-medium">#{trx.id}</TableCell>
                                             <TableCell>{trx.buyer?.name || 'N/A'}</TableCell>
                                             <TableCell>{new Date(trx.created_at).toLocaleDateString('id-ID')}</TableCell>
                                             <TableCell className="text-right">{formatCurrency(trx.total_price)}</TableCell>
                                             <TableCell className="text-right">
-                                                {/* Cukup satu Link di sini */}
                                                 <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(trx)}>
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
-                                        // ================================
                                     ))
                                 ) : (
                                     <TableRow>
-                                        {/* ColSpan disesuaikan menjadi 5 karena ada 5 kolom */}
                                         <TableCell colSpan="5" className="text-center h-24">
-                                            Belum ada transaksi yang selesai.
+                                            Tidak ada transaksi selesai pada periode ini.
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -108,7 +177,7 @@ export default function Index({ stats, transactions }) {
                 </Card>
             </div>
 
-            {/* Komponen Modal */}
+            {/* Komponen Modal (tetap sama) */}
             <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>

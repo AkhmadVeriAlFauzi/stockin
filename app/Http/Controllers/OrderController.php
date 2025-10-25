@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserAddress;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
 
 
 class OrderController extends Controller
@@ -86,14 +87,57 @@ class OrderController extends Controller
 
     public function update(UpdateOrderRequest $request, Order $order)
     {
-        // 1. Validasi otomatis dijalankan oleh UpdateOrderRequest
         $validated = $request->validated();
 
-        // 2. Update data order di database
-        $order->update($validated);
+        // Ambil status order SEBELUM di-update
+        $statusBefore = $order->order_status;
+        
+        // Ambil status order BARU dari request
+        $statusAfter = $validated['order_status'];
 
-        // 3. Redirect kembali ke halaman detail dengan pesan sukses
-        return redirect()->route('orders.show', $order->id)->with('success', 'Order berhasil diperbarui.');
+        // Eager load relasi yang DIBUTUHKAN
+        $order->load('items.product');
+
+        try {
+            // Mulai "Transaction"
+            DB::beginTransaction();
+
+            // Update status ordernya
+            $order->update($validated);
+
+            // LOGIKA PENGURANGAN STOK
+            if ($statusBefore === 'pending_payment' && $statusAfter === 'processing') {
+                foreach ($order->items as $item) {
+                    $product = $item->product;
+                    if ($product) {
+                        if ($product->stock < $item->quantity) {
+                            throw new \Exception("Stok produk '{$product->name}' tidak mencukupi (sisa {$product->stock}).");
+                        }
+                        $product->decrement('stock', $item->quantity);
+                    }
+                }
+            }
+
+            // LOGIKA PENGEMBALIAN STOK
+            if (in_array($statusBefore, ['processing', 'shipped']) && $statusAfter === 'cancelled') {
+                 foreach ($order->items as $item) {
+                    if ($item->product) {
+                        $item->product->increment('stock', $item->quantity);
+                    }
+                }
+            }
+
+            // Jika semua aman, simpan permanen ke database
+            DB::commit();
+
+        } catch (\Exception $e) {
+            // Kalau ada error (misal stok nggak cukup), batalkan semua
+            DB::rollBack();
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+
+        // Redirect sukses
+        return redirect()->route('orders.show', $order->id)->with('success', 'Order berhasil diperbarui & stok telah diupdate.');
     }
 
     public function destroy(Order $order)
@@ -119,28 +163,36 @@ class OrderController extends Controller
             return "Error: Toko '{$store->store_name}' tidak punya produk.";
         }
 
-        // Kode untuk membuat buyer dan address sudah benar, kita biarkan.
-        $buyer = User::firstOrCreate(/*...*/);
-        $address = UserAddress::firstOrCreate(/*...*/);
+        // ===== INI YANG DIPERBAIKI DARI '/*...*/' =====
+        $buyer = User::firstOrCreate(
+            ['email' => 'buyer@example.com'],
+            ['name' => 'Dummy Buyer', 'password' => bcrypt('password'), 'role' => 'user']
+        );
+        $address = UserAddress::firstOrCreate(
+            ['user_id' => $buyer->id, 'label' => 'Rumah'],
+            [
+                'recipient_name' => $buyer->name,
+                'phone_number'   => '081234567890',
+                'full_address'   => 'Jl. Jend. Sudirman No. 123, Surakarta, Jawa Tengah, 57151',
+            ]
+        );
+        // =============================================
 
-        // Kode untuk membuat order utama juga sudah benar.
         $order = $store->orders()->create([
             'buyer_id'            => $buyer->id,
             'shipping_address_id' => $address->id,
             'total_price'         => $product->price * 2,
-            'shipping_cost'       => 15000,
+            'shipping_cost'       => 5000,
             'order_status'        => 'pending_payment',
             'shipping_courier'    => 'JNE',
         ]);
 
-        // ===== INI BAGIAN YANG DISESUAIKAN DENGAN DATABASE ASLI LO =====
+        // ... (Kode items()->create lo udah bener) ...
         $order->items()->create([
             'product_id'   => $product->id,
             'quantity'     => 2,
             'price'        => $product->price,
-            // 'product_name' dan 'store_id' kita hapus total
         ]);
-        // =============================================================
 
         return response()->json([
             'message' => "SUKSES! Order dummy baru berhasil dibuat untuk toko: {$store->store_name}.",
