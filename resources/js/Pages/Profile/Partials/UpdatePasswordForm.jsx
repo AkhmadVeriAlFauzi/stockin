@@ -16,7 +16,7 @@ export default function UpdatePasswordForm() {
 
     const submit = (e) => {
         e.preventDefault();
-        put(route('profile.password.update'), {
+        put('/profile/password', { // <-- PERUBAHAN DI SINI
             preserveScroll: true,
             onSuccess: () => {
                 reset();

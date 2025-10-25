@@ -136,7 +136,7 @@ export default function DashboardIndex({ stats, recentOrders, salesData }) {
                     {/* Transaksi Terbaru (2/5 kolom) */}
                     <Card className="lg:col-span-2">
                         <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
+                            <div className='space-y-1'>
                                 <CardTitle>5 Transaksi Terbaru</CardTitle>
                                 <CardDescription>Pesanan terbaru dari tokomu.</CardDescription>
                             </div>

@@ -125,7 +125,7 @@ export default function Index({ stats, transactions, filters }) {
                 <Card>
                     {/* 2. BAGIAN INI DI-UPDATE */}
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
+                        <div className='space-y-1'>
                             <CardTitle>Transaksi Terakhir ({stats.periodName})</CardTitle>
                             <CardDescription>Daftar transaksi yang sudah selesai pada periode ini.</CardDescription>
                         </div>
