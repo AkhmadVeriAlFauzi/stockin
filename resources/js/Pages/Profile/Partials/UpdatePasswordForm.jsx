@@ -18,12 +18,9 @@ export default function UpdatePasswordForm() {
         e.preventDefault();
         put('/profile/password', { // <-- PERUBAHAN DI SINI
             preserveScroll: true,
-            onSuccess: () => {
-                reset();
-                toast.success('Password Updated!', {
-                    description: 'Your password has been successfully updated.'
-                });
-            },
+            onSuccess: () => 
+                reset(),    
+                
         });
     };
 
