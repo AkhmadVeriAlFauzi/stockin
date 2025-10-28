@@ -12,6 +12,7 @@ use App\Http\Controllers\SuperAdmin\ProductCategoryController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SuperAdmin\ManageUmkmController;
+use Illuminate\Support\Facades\App;
 
 // ==========================================================
 // RUTE PUBLIK & OTENTIKASI DASAR
@@ -40,6 +41,7 @@ Route::middleware(['auth'])->group(function () {
 // ==========================================================
 Route::middleware(['auth', 'role:umkm_admin'])->group(function () {
     Route::resource('products', ProductController::class);
+    Route::get('/orders/export', [OrderController::class, 'export'])->name('orders.export');
     Route::resource('orders', OrderController::class);
     Route::get('/store', [StoreController::class, 'edit'])->name('store.edit');
     Route::put('/store', [StoreController::class, 'update'])->name('store.update');

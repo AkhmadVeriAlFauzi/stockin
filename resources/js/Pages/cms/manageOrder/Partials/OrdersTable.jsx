@@ -37,16 +37,29 @@ const Badge = ({ status }) => {
     return <span className={`capitalize px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${styleClasses}`}>{text}</span>;
 };
 
+// --- PERUBAHAN DI SINI ---
 const formatDate = (dateString) => {
     if (!dateString) return '-';
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('id-ID', options);
+    // Ganti opsinya untuk menyertakan jam
+    const options = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23' // Format 24 jam
+    };
+    // Ganti .toLocaleDateString menjadi .toLocaleString
+    return new Date(dateString).toLocaleString('id-ID', options);
 };
+// --- AKHIR PERUBAHAN ---
 
-const OrderTableRow = ({ order, onDeleteClick }) => (
+// Terima prop 'onViewOrder'
+const OrderTableRow = ({ order, onDeleteClick, onViewOrder }) => (
     <TableRow key={order.id}>
         <TableCell className="px-6 font-medium text-indigo-600">#{order.id}</TableCell>
         <TableCell className="px-6">{order.buyer?.name || 'N/A'}</TableCell>
+        {/* Kolom ini sekarang akan menampilkan jam */}
         <TableCell className="px-6 text-slate-500">{formatDate(order.created_at)}</TableCell>
         <TableCell className="px-6 text-center">{order.items_count}</TableCell>
         <TableCell className="px-6">{(order.shipping_courier?.toUpperCase()) || '-'}</TableCell>
@@ -54,9 +67,11 @@ const OrderTableRow = ({ order, onDeleteClick }) => (
         <TableCell className="px-6"><Badge status={order.order_status} /></TableCell>
         <TableCell className="px-6 text-right">
             <div className="flex justify-end space-x-2">
-                <Button variant="ghost" size="icon" asChild>
-                    <Link href={`/orders/${order.id}`}><Eye className="w-4 h-4" /></Link>
+                {/* Ganti Link jadi Button onClick */}
+                <Button variant="ghost" size="icon" onClick={() => onViewOrder(order)}>
+                    <Eye className="w-4 h-4" />
                 </Button>
+                
                 <Button variant="ghost" size="icon" asChild>
                     <Link href={`/orders/${order.id}/edit`}><Pencil className="w-4 h-4" /></Link>
                 </Button>
@@ -68,7 +83,8 @@ const OrderTableRow = ({ order, onDeleteClick }) => (
     </TableRow>
 );
 
-export default function OrdersTable({ orders }) {
+// Terima prop 'onViewOrder' dan teruskan ke 'OrderTableRow'
+export default function OrdersTable({ orders, onViewOrder }) {
     const [orderToDelete, setOrderToDelete] = useState(null);
 
     const handleDeleteConfirm = () => {
@@ -100,6 +116,7 @@ export default function OrdersTable({ orders }) {
                                 key={order.id}
                                 order={order}
                                 onDeleteClick={() => setOrderToDelete(order)}
+                                onViewOrder={onViewOrder} // <-- teruskan prop di sini
                             />
                         ))
                     ) : (
@@ -133,3 +150,4 @@ export default function OrdersTable({ orders }) {
         </>
     );
 }
+
