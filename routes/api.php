@@ -2,15 +2,23 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController; // Buat controller baru ini nanti
-use App\Http\Controllers\Api\StoreController; // Buat controller baru ini nanti
-use App\Http\Controllers\Api\UserController; // Buat controller baru ini nanti
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\StoreController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\ProductController;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
 */
+
+// --- Rute Publik (Browse) ---
+// Ini yang barusan kita tambahin
+Route::get('/products', [ProductController::class, 'index']);      // List semua produk
+Route::get('/products/{product}', [ProductController::class, 'show']); // Detail produk
+Route::get('/stores', [StoreController::class, 'index']);          // List semua toko
+Route::get('/stores/{store}', [StoreController::class, 'show']);       // Detail toko + produknya
 
 // Rute Publik (Tidak perlu login)
 Route::post('/register', [AuthController::class, 'register']);
