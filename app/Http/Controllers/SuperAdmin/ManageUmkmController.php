@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Store;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -15,12 +16,13 @@ class ManageUmkmController extends Controller
     public function index()
     {
         // Ambil semua data toko, beserta data user (pemiliknya)
-        $stores = Store::with('user:id,name,email')
-            ->latest() // Urutkan dari yang terbaru
-            ->paginate(10); // Batasi 10 per halaman
+        $users = User::where('role', 'umkm_admin')
+            ->with('store') // Ambil relasi store-nya (bisa null kalo belum setup)
+            ->latest()      // Urutkan dari user terbaru
+            ->paginate(10);
 
         return Inertia::render('SuperAdmin/UMKM/Index', [
-            'stores' => $stores,
+            'users' => $users,
         ]);
     }
 
