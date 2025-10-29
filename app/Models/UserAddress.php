@@ -18,6 +18,10 @@ class UserAddress extends Model
         'is_default',
     ];
 
+    protected $casts = [
+        'is_default' => 'boolean',
+    ];
+
     // RELASI: Satu Alamat dimiliki oleh satu User
     public function user()
     {

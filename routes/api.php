@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\AddressController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,9 +49,26 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/stores', [StoreController::class, 'store'])->middleware('role:umkm_admin'); 
     Route::put('/store', [StoreController::class, 'update'])->middleware('role:umkm_admin'); // Update toko milik user yg login
 
-    // --- Nanti tambahkan API CRUD Product, Order, dll di sini ---
-    // Route::apiResource('products', ProductApiController::class)->middleware('role:umkm_admin');
-    // Route::get('/orders', [OrderApiController::class, 'index'])->middleware('role:umkm_admin');
-    // ... dan seterusnya ...
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart', [CartController::class, 'store']);
+    Route::put('/cart/{cartItem}', [CartController::class, 'update']);
+    Route::delete('/cart/{cartItem}', [CartController::class, 'destroy']);
+
+    // --- Rute Checkout ---
+    Route::post('/checkout', [CheckoutController::class, 'store']);
+
+    // --- Rute Alamat Pengiriman ---
+    // Menggunakan apiResource untuk CRUD standar
+    // Ini otomatis membuat endpoint berikut (semua diawali /api/addresses):
+    // GET    /                -> index()   (Lihat semua alamat user)
+    // POST   /                -> store()   (Tambah alamat baru)
+    // GET    /{address}       -> show()    (Lihat detail satu alamat)
+    // PUT    /{address}       -> update()  (Update satu alamat)
+    // DELETE /{address}       -> destroy() (Hapus satu alamat)
+    Route::apiResource('addresses', AddressController::class);
+
+    // Route tambahan khusus untuk set default (pakai PATCH lebih cocok)
+    // PATCH /api/addresses/{address}/set-default
+    Route::patch('/addresses/{address}/set-default', [AddressController::class, 'setDefault']);
 
 });
