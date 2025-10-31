@@ -1,14 +1,13 @@
 import React from 'react';
 import MainLayout from '@/Layouts/MainLayout';
-import { Head, Link } from '@inertiajs/react'; // <-- Import Link
+import { Head, Link, router } from '@inertiajs/react'; // <-- Import Link
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import Pagination from '@/Components/Pagination';
-import { BadgeCheck, Ban, Clock } from 'lucide-react'; // <-- Import ikon baru
+import { BadgeCheck, Ban, Clock, AlertTriangle} from 'lucide-react'; // <-- Import ikon baru
 
-// Komponen StatusBadge (DIPERBARUI)
-// Sekarang dia nerima object 'store' (yang bisa jadi null)
+
 const StatusBadge = ({ store }) => {
     let statusClass, statusText, Icon;
 
@@ -20,9 +19,19 @@ const StatusBadge = ({ store }) => {
         statusClass = 'bg-green-100 text-green-800';
         statusText = 'Active';
         Icon = BadgeCheck;
-    } else {
-        // Asumsi status lainnya (misal 'suspended', 'inactive')
+    // --- TAMBAH KONDISI INI ---
+    } else if (store.status === 'pending_verification') {
+        statusClass = 'bg-orange-100 text-orange-800';
+        statusText = 'Pending Approval';
+        Icon = AlertTriangle; // Ikon baru
+    // --- TAMBAH KONDISI INI ---
+    } else if (store.status === 'inactive') {
         statusClass = 'bg-red-100 text-red-800';
+        statusText = 'Suspended';
+        Icon = Ban;
+    } else {
+        // Fallback status lain (misal 'rejected', 'inactive')
+        statusClass = 'bg-gray-100 text-gray-800';
         statusText = store.status;
         Icon = Ban;
     }
@@ -35,8 +44,37 @@ const StatusBadge = ({ store }) => {
     );
 };
 
-// Ganti prop 'stores' jadi 'users'
 export default function Index({ users }) {
+
+    // --- TAMBAH HANDLER ---
+    const handleApprove = (storeId) => {
+        if (confirm('Are you sure you want to approve this store?')) {
+            // Pake router.post()
+            router.post(route('superadmin.umkm.approve', storeId), {}, {
+                preserveScroll: true, // Biar nggak loncat ke atas halaman
+                // Nanti bisa pake notifikasi toast
+            });
+        }
+    };
+
+    const handleSuspend = (storeId) => {
+        if (confirm('Are you sure you want to suspend this store?')) {
+            router.post(route('superadmin.umkm.suspend', storeId), {}, {
+                preserveScroll: true,
+            });
+        }
+    };
+    
+    const handleReactivate = (storeId) => {
+        if (confirm('Are you sure you want to reactivate this store?')) {
+            router.post(route('superadmin.umkm.reactivate', storeId), {}, {
+                preserveScroll: true,
+            });
+        }
+    };
+    // --- AKHIR HANDLER ---
+
+
     return (
         <MainLayout title="Manage UMKM">
             <Head title="Manage UMKM" />
@@ -44,8 +82,8 @@ export default function Index({ users }) {
                 <CardHeader>
                     <div className="flex justify-between items-center">
                         <CardTitle>UMKM (Users)</CardTitle>
-                        {/* Tombol ini belum berfungsi */}
-                        <Button disabled>Add New UMKM</Button>
+                        {/* Tombol ini kita nonaktifkan sesuai kesepakatan */}
+                        <Button disabled>Add New UMKM</Button> 
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -81,22 +119,42 @@ export default function Index({ users }) {
                                         {new Date(user.created_at).toLocaleDateString('id-ID', {
                                             day: 'numeric', month: 'long', year: 'numeric'
                                         })}
-                                    </TableCell>
+                                    </TableCell> {/* <-- INI YANG DIBENERIN */}
                                     <TableCell className="text-right space-x-2">
-                                        {/* Logika untuk tombol: bedakan yg sudah punya toko & yg belum */}
+                                        
+                                        {/* --- UPDATE LOGIKA TOMBOL --- */}
                                         {user.store ? (
                                             <>
-                                                {/* Nanti ini bisa jadi link ke /manage-umkm/{store.id} */}
+                                                {/* Tombol View Store */}
                                                 <Button variant="outline" size="sm" asChild>
-                                                    <Link href={`/manage-umkm/${user.store.id}/edit`}>View Store</Link>
+                                                    {/* Nanti ini bisa jadi link ke /manage-umkm/{store.id} */}
+                                                    <Link href="#">View</Link> 
                                                 </Button>
-                                                <Button variant="destructive" size="sm">Suspend</Button>
+
+                                                {/* Tombol Kondisional: Approve / Suspend / Reactivate */}
+                                                {user.store.status === 'pending_verification' && (
+                                                    <Button size="sm" onClick={() => handleApprove(user.store.id)} className="bg-blue-600 hover:bg-blue-700">
+                                                        Approve
+                                                    </Button>
+                                                )}
+                                                {user.store.status === 'active' && (
+                                                    <Button variant="destructive" size="sm" onClick={() => handleSuspend(user.store.id)}>
+                                                        Suspend
+                                                    </Button>
+                                                )}
+                                                {user.store.status === 'inactive' && (
+                                                    <Button variant="secondary" size="sm" onClick={() => handleReactivate(user.store.id)}>
+                                                        Reactivate
+                                                    </Button>
+                                                )}
                                             </>
                                         ) : (
-                                            <Button variant="outline" size="sm">
-                                                Send Reminder
+                                            <Button variant="outline" size="sm" disabled>
+                                                (No action)
                                             </Button>
                                         )}
+                                        {/* --- AKHIR UPDATE TOMBOL --- */}
+
                                     </TableCell>
                                 </TableRow>
                             ))}

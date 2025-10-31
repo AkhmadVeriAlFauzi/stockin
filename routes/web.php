@@ -40,13 +40,22 @@ Route::middleware(['auth'])->group(function () {
 // RUTE KHUSUS UMKM ADMIN
 // ==========================================================
 Route::middleware(['auth', 'role:umkm_admin'])->group(function () {
-    Route::resource('products', ProductController::class);
-    Route::get('/orders/export', [OrderController::class, 'export'])->name('orders.export');
-    Route::resource('orders', OrderController::class);
+    
+    // --- Rute yang BOLEH diakses walau belum 'active' ---
+    // (Dashboard ada di grup 'auth' di atas, jadi udah aman)
+    // (Store Info buat ngisi/benerin data tokonya)
     Route::get('/store', [StoreController::class, 'edit'])->name('store.edit');
     Route::put('/store', [StoreController::class, 'update'])->name('store.update');
-    Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
-    Route::get('/finance/export', [FinanceController::class, 'export'])->name('finance.export');
+
+    // --- Rute yang WAJIB tokonya 'active' (Pake middleware baru 'store.active') ---
+    Route::middleware(['store.active'])->group(function () {
+        // (Pindahin semua route krusial ke sini)
+        Route::resource('products', ProductController::class);
+        Route::get('/orders/export', [OrderController::class, 'export'])->name('orders.export'); // Taruh SEBELUM resource
+        Route::resource('orders', OrderController::class);
+        Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
+        Route::get('/finance/export', [FinanceController::class, 'export'])->name('finance.export');
+    });
 });
 
 // ==========================================================
@@ -57,6 +66,9 @@ Route::middleware(['auth', 'role:superadmin'])->group(function () {
     Route::resource('/manage-categories', ProductCategoryController::class);
     // Tambah rute super admin lain di sini
     Route::resource('/manage-umkm', ManageUmkmController::class);
+    Route::post('/manage-umkm/{store}/approve', [ManageUmkmController::class, 'approve'])->name('umkm.approve');
+    Route::post('/manage-umkm/{store}/suspend', [ManageUmkmController::class, 'suspend'])->name('umkm.suspend');
+    Route::post('/manage-umkm/{store}/reactivate', [ManageUmkmController::class, 'reactivate'])->name('umkm.reactivate');
 });
 
 if (App::isLocal()) {

@@ -37,6 +37,8 @@ class StoreController extends Controller
         // Validasi otomatis dijalankan oleh UpdateStoreRequest
         $validated = $request->validated();
 
+        unset($validated['status']);
+
         // Cek apakah ada file logo baru yang di-upload
         if ($request->hasFile('logo')) {
             // Hapus logo lama jika ada

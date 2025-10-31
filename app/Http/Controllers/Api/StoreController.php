@@ -4,73 +4,67 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateStoreRequest;
-use App\Models\Store; // <-- Import model Store
+use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Http\Resources\StoreResource; // <-- Import Resource Store
-use App\Http\Resources\ProductResource; // <-- Import Resource Product
+use App\Http\Resources\StoreResource;
+use App\Http\Resources\ProductResource;
 
 class StoreController extends Controller
 {
     /**
      * [BARU] Menampilkan daftar semua toko (untuk publik/buyer).
-     * Hanya tampilkan toko yang statusnya 'active'.
      * Route: GET /api/stores
      */
     public function index(Request $request)
     {
-        $storesQuery = Store::where('status', 'active');
+        $storesQuery = Store::where('status', 'active'); 
+        // --- AKHIR PERUBAHAN ---
 
-        // Filter: Search (berdasarkan nama toko)
         if ($request->has('search')) {
             $storesQuery->where('store_name', 'like', '%' . $request->search . '%');
         }
-        
-        // Filter: Kota
         if ($request->has('city')) {
             $storesQuery->where('city', 'like', '%' . $request->city . '%');
         }
 
         $stores = $storesQuery->latest()->paginate(15)->withQueryString();
-
-        // Gunakan API Resource
         return StoreResource::collection($stores);
     }
 
     /**
      * [BARU] Menampilkan detail satu toko beserta produknya.
-     * Hanya tampilkan jika status toko 'active'.
      * Route: GET /api/stores/{store}
      */
     public function show(Store $store)
     {
-        if ($store->status !== 'active') {
+        // --- BAGIAN INI UDAH BENER, NGGAK USAH DIUBAH ---
+        // Kenapa? Karena $store adalah Model, jadi Accessor 'status()' jalan.
+        // Dia otomatis nerjemahin angka 1 -> string 'active'
+        if ($store->status !== 'active') { 
+        // --- 
             return response()->json(['message' => 'Store not found or inactive.'], 404);
         }
 
-        // Load produk milik toko ini (yang aktif & ada stok) + paginasi
         $products = $store->products()
-                          ->where('status', 'active')
+                          // Kita juga harus benerin ini di ProductController nanti
+                          ->where('status', 'active') // Asumsi produk juga punya status
                           ->where('stock', '>', 0)
                           ->latest()
-                          ->paginate(10, ['*'], 'productsPage'); // Nama query param beda
+                          ->paginate(10, ['*'], 'productsPage');
 
-        // Gunakan API Resource untuk Store, dan sertakan data produk yg sudah dipaginasi
         return (new StoreResource($store))
                     ->additional(['products' => ProductResource::collection($products)]);
     }
 
 
-    // --- Method store() dan update() yang lama tetap di sini ---
-    // (Method untuk UMKM Admin membuat/mengupdate tokonya sendiri)
-
     /**
      * [LAMA] Create a new store for the authenticated user (must be umkm_admin).
-     * Route: POST /api/stores (requires auth & role umkm_admin)
      */
     public function store(UpdateStoreRequest $request)
     {
+        // ... (Kode store() lo udah BENER, jangan diubah lagi) ...
         $user = $request->user();
 
         if ($user->store) {
@@ -84,25 +78,26 @@ class StoreController extends Controller
             $logoUrl = Storage::url($path);
             $validated['logo_url'] = $logoUrl;
         }
+        $dataToCreate = array_merge($validated, [
+            'status' => 'pending_verification' 
+        ]);
 
-        $store = $user->store()->create(array_merge($validated, [
-            'status' => 'active'
-        ]));
+        $store = $user->store()->create($dataToCreate); // Ini udah bener
 
         $user->load('store');
 
         return response()->json([
-            'message' => 'Store created successfully',
+            'message' => 'Store created successfully and is awaiting approval.',
             'store'   => $store,
         ], 201);
     }
 
     /**
      * [LAMA] Update the authenticated user's existing store (must be umkm_admin).
-     * Route: PUT /api/store (requires auth & role umkm_admin)
      */
     public function update(UpdateStoreRequest $request)
     {
+        // ... (Kode update() lo udah BENER, jangan diubah lagi) ...
         $user = $request->user();
         $store = $user->store;
 
@@ -111,6 +106,8 @@ class StoreController extends Controller
         }
 
         $validated = $request->validated();
+        unset($validated['status']);
+        
         $oldLogoPath = $store->logo_url ? str_replace('/storage/', '', $store->logo_url) : null;
 
         if ($request->hasFile('logo')) {

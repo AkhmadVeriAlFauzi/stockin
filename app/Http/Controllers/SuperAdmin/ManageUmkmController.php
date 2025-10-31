@@ -7,6 +7,8 @@ use App\Models\Store;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Http\RedirectResponse; 
+use Illuminate\Support\Facades\Redirect;
 
 class ManageUmkmController extends Controller
 {
@@ -17,8 +19,8 @@ class ManageUmkmController extends Controller
     {
         // Ambil semua data toko, beserta data user (pemiliknya)
         $users = User::where('role', 'umkm_admin')
-            ->with('store') // Ambil relasi store-nya (bisa null kalo belum setup)
-            ->latest()      // Urutkan dari user terbaru
+            ->with('store')
+            ->latest()
             ->paginate(10);
 
         return Inertia::render('SuperAdmin/UMKM/Index', [
@@ -26,7 +28,27 @@ class ManageUmkmController extends Controller
         ]);
     }
 
-    // --- Method lain akan kita isi nanti saat dibutuhkan ---
+    public function approve(Store $store): RedirectResponse
+    {
+        $store->update(['status' => 'active' ]);
+        
+        // Kirim notifikasi ke user (Opsional, tapi bagus)
+        // Mail::to($store->user->email)->send(new StoreApprovedMail($store));
+
+        return Redirect::route('superadmin.umkm.index')->with('success', 'Store approved successfully.');
+    }
+
+    public function suspend(Store $store): RedirectResponse
+    {
+        $store->update(['status' => 'inactive' ]);
+        return Redirect::route('superadmin.umkm.index')->with('success', 'Store has been suspended.');
+    }
+
+    public function reactivate(Store $store): RedirectResponse
+    {
+        $store->update(['status' => 'active' ]);
+        return Redirect::route('superadmin.umkm.index')->with('success', 'Store has been reactivated.');
+    }
 
     public function create()
     {
