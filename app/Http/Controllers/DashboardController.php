@@ -29,12 +29,10 @@ class DashboardController extends Controller
             // UMKM yang daftar (role) tapi belum setup (store)
             $pendingUmkm = User::where('role', 'umkm_admin')->doesntHave('store')->count();
 
-            // --- PERBAIKAN DI SINI ---
-            // Ganti relasi 'owner' jadi 'user' (sesuai error)
+            // Ganti relasi 'owner' jadi 'user' (sesuai error sebelumnya)
             $recentStores = Store::with('user:id,name')->latest()->take(5)->get();
-            // --- AKHIR PERBAIKAN ---
             
-            $salesData = $this->getPlatformMonthlySalesData();
+            $salesData = $this->getPlatformMonthlySalesData(); // Panggil helper superadmin
 
             // Render komponen Dashboard Superadmin
             return Inertia::render('SuperAdmin/Dashboard/index', [
@@ -88,7 +86,7 @@ class DashboardController extends Controller
                 ->get();
 
             // 3. DATA UNTUK GRAFIK (Kode Asli Kamu)
-            $salesData = $this->getMonthlySalesData($store->id);
+            $salesData = $this->getMonthlySalesData($store->id); // Panggil helper UMKM
 
             return Inertia::render('cms/dashboard/index', [
                 'stats' => [
@@ -114,16 +112,19 @@ class DashboardController extends Controller
     protected function getMonthlySalesData($storeId)
     {
         $months = [];
-        $current = Carbon::now();
-        
-        for ($i = 5; $i >= 0; $i--) {
-            $date = (clone $current)->subMonths($i);
+        // --- PERBAIKAN LOOP DIMULAI DI SINI ---
+        // Kita loop mundur 6x dari bulan ini
+        $date = Carbon::now()->startOfMonth(); // Mulai dari tanggal 1 bulan ini
+        for ($i = 0; $i < 6; $i++) {
             $months[] = [
                 'month' => $date->month,
                 'year' => $date->year,
                 'label' => $date->isoFormat('MMM YYYY'),
             ];
+            $date->subMonth(); // Mundur 1 bulan untuk iterasi berikutnya
         }
+        $months = array_reverse($months); // Balikin urutannya (Mei, Jun, Jul, Agu, Sep, Okt)
+        // --- AKHIR PERBAIKAN LOOP ---
 
         $results = DB::table('orders')
             ->select(
@@ -133,12 +134,12 @@ class DashboardController extends Controller
             )
             ->where('store_id', $storeId)
             ->where('order_status', 'completed')
-            ->where('created_at', '>=', (clone $current)->subMonths(5)->startOfMonth())
+            // Query 6 bulan terakhir (ambil tanggal dari array $months paling awal)
+            ->where('created_at', '>=', Carbon::create($months[0]['year'], $months[0]['month'], 1))
             ->groupBy('year', 'month')
-            ->orderBy('year', 'asc')
-            ->orderBy('month', 'asc')
             ->get();
 
+        // Gabungkan data (Logic ini udah bener)
         $finalData = [];
         foreach ($months as $month) {
             $match = $results->first(fn($r) => $r->month == $month['month'] && $r->year == $month['year']);
@@ -158,16 +159,18 @@ class DashboardController extends Controller
     protected function getPlatformMonthlySalesData()
     {
         $months = [];
-        $current = Carbon::now();
-        
-        for ($i = 5; $i >= 0; $i--) {
-            $date = (clone $current)->subMonths($i);
+        // --- PERBAIKAN LOOP DIMULAI DI SINI (SAMA PERSIS) ---
+        $date = Carbon::now()->startOfMonth();
+        for ($i = 0; $i < 6; $i++) {
             $months[] = [
                 'month' => $date->month,
                 'year' => $date->year,
                 'label' => $date->isoFormat('MMM YYYY'),
             ];
+            $date->subMonth(); // Mundur 1 bulan
         }
+        $months = array_reverse($months); // Balikin urutannya
+        // --- AKHIR PERBAIKAN LOOP ---
 
         $results = DB::table('orders')
             ->select(
@@ -177,12 +180,11 @@ class DashboardController extends Controller
             )
             // <-- TIDAK ADA 'where store_id'
             ->where('order_status', 'completed')
-            ->where('created_at', '>=', (clone $current)->subMonths(5)->startOfMonth())
+            ->where('created_at', '>=', Carbon::create($months[0]['year'], $months[0]['month'], 1))
             ->groupBy('year', 'month')
-            ->orderBy('year', 'asc')
-            ->orderBy('month', 'asc')
             ->get();
 
+        // Gabungkan data (Logic ini udah bener)
         $finalData = [];
         foreach ($months as $month) {
             $match = $results->first(fn($r) => $r->month == $month['month'] && $r->year == $month['year']);
